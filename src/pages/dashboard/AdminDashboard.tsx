@@ -7,6 +7,7 @@ import { BarChart3, Users, HomeIcon, AlertCircle, User } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -15,18 +16,17 @@ const users = [
   { id: '1', name: 'John Doe', email: 'guest@kinnstay.com', role: 'guest', status: 'active', joined: '2023-01-15' },
   { id: '2', name: 'Sarah Williams', email: 'host@kinnstay.com', role: 'host', status: 'active', joined: '2022-10-05' },
   { id: '3', name: 'Michael Brown', email: 'michael@example.com', role: 'guest', status: 'pending', joined: '2023-04-22' },
-  { id: '4', name: 'Emily Johnson', email: 'emily@example.com', role: 'host', status: 'pending', joined: '2023-05-18' }
 ];
 
 // Sample property data
 const properties = [
   { id: '1', name: 'Luxury Beach Villa', host: 'Sarah Williams', location: 'Malibu, California', status: 'active', bookings: 12 },
   { id: '2', name: 'Mountain Retreat Cabin', host: 'Sarah Williams', location: 'Aspen, Colorado', status: 'active', bookings: 8 },
-  { id: '3', name: 'Downtown Apartment', host: 'Emily Johnson', location: 'New York, NY', status: 'pending', bookings: 0 }
 ];
 
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -51,6 +51,13 @@ const AdminDashboard = () => {
                     Admin
                   </span>
                 </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate('/profile/settings')}
+                >
+                  Edit Profile
+                </Button>
               </Card>
             </div>
             
@@ -124,12 +131,11 @@ const AdminDashboard = () => {
                             <TableHead>Email</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Joined Date</TableHead>
                             <TableHead>Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {users.map(user => (
+                          {users.slice(0, 3).map(user => (
                             <TableRow key={user.id}>
                               <TableCell className="font-medium">{user.name}</TableCell>
                               <TableCell>{user.email}</TableCell>
@@ -143,7 +149,6 @@ const AdminDashboard = () => {
                                   {user.status}
                                 </Badge>
                               </TableCell>
-                              <TableCell>{user.joined}</TableCell>
                               <TableCell>
                                 <div className="flex space-x-2">
                                   <Button variant="outline" size="sm">Edit</Button>
@@ -159,6 +164,14 @@ const AdminDashboard = () => {
                         </TableBody>
                       </Table>
                     </div>
+                    <div className="flex justify-end mt-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/dashboard/admin/users')}
+                      >
+                        View All Users
+                      </Button>
+                    </div>
                   </Card>
                 </TabsContent>
                 
@@ -173,7 +186,6 @@ const AdminDashboard = () => {
                             <TableHead>Host</TableHead>
                             <TableHead>Location</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Bookings</TableHead>
                             <TableHead>Actions</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -188,21 +200,23 @@ const AdminDashboard = () => {
                                   {property.status}
                                 </Badge>
                               </TableCell>
-                              <TableCell>{property.bookings}</TableCell>
                               <TableCell>
                                 <div className="flex space-x-2">
                                   <Button variant="outline" size="sm">View</Button>
-                                  {property.status === 'pending' && (
-                                    <Button variant="outline" size="sm" className="text-green-500 border-green-200 hover:bg-green-50">
-                                      Approve
-                                    </Button>
-                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/dashboard/admin/properties')}
+                      >
+                        View All Properties
+                      </Button>
                     </div>
                   </Card>
                 </TabsContent>
@@ -229,6 +243,14 @@ const AdminDashboard = () => {
                           <label className="text-sm text-gray-500">Email</label>
                           <p className="font-medium">{user?.email}</p>
                         </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => navigate('/profile/settings')}
+                        >
+                          Edit Profile
+                        </Button>
                       </div>
                     </div>
                   </Card>

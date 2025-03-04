@@ -4,11 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Home, MessageSquare, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 const GuestDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -34,8 +37,15 @@ const GuestDashboard = () => {
                   </span>
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <p className="text-sm text-gray-500">Member since: Jan 2023</p>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate('/profile/settings')}
+                  >
+                    Edit Profile
+                  </Button>
                 </div>
               </Card>
             </div>
@@ -66,9 +76,22 @@ const GuestDashboard = () => {
                     <h3 className="text-xl font-bold mb-4">Your Upcoming Stays</h3>
                     <div className="p-8 text-center">
                       <p className="text-gray-500 mb-4">You don't have any upcoming bookings.</p>
-                      <a href="/properties" className="text-primary hover:underline">
-                        Browse properties to book your next stay
-                      </a>
+                      <div className="flex justify-center">
+                        <Button 
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => navigate('/properties')}
+                        >
+                          Browse Properties
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/dashboard/guest/bookings')}
+                      >
+                        View All Bookings
+                      </Button>
                     </div>
                   </Card>
                 </TabsContent>
@@ -78,9 +101,22 @@ const GuestDashboard = () => {
                     <h3 className="text-xl font-bold mb-4">Properties You've Saved</h3>
                     <div className="p-8 text-center">
                       <p className="text-gray-500 mb-4">You haven't saved any properties yet.</p>
-                      <a href="/properties" className="text-primary hover:underline">
-                        Browse properties to save your favorites
-                      </a>
+                      <div className="flex justify-center">
+                        <Button 
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => navigate('/properties')}
+                        >
+                          Browse Properties
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/dashboard/guest/saved')}
+                      >
+                        View All Saved
+                      </Button>
                     </div>
                   </Card>
                 </TabsContent>
@@ -90,6 +126,14 @@ const GuestDashboard = () => {
                     <h3 className="text-xl font-bold mb-4">Messages</h3>
                     <div className="p-8 text-center">
                       <p className="text-gray-500 mb-4">You don't have any messages.</p>
+                      <div className="flex justify-center">
+                        <Button 
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => navigate('/contact')}
+                        >
+                          Contact Support
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 </TabsContent>
@@ -107,6 +151,14 @@ const GuestDashboard = () => {
                           <label className="text-sm text-gray-500">Email</label>
                           <p className="font-medium">{user?.email}</p>
                         </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => navigate('/profile/settings')}
+                        >
+                          Edit Profile
+                        </Button>
                       </div>
                     </div>
                   </Card>

@@ -15,8 +15,15 @@ import SignUp from "./pages/SignUp";
 import GuestDashboard from "./pages/dashboard/GuestDashboard";
 import HostDashboard from "./pages/dashboard/HostDashboard";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
+import GuestBookings from "./pages/dashboard/guest/GuestBookings";
+import GuestSaved from "./pages/dashboard/guest/GuestSaved";
+import HostProperties from "./pages/dashboard/host/HostProperties";
+import HostBookings from "./pages/dashboard/host/HostBookings";
+import AdminUsers from "./pages/dashboard/admin/AdminUsers";
+import AdminProperties from "./pages/dashboard/admin/AdminProperties";
 import PropertyDetail from "./pages/PropertyDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ProfileSettings from "./pages/profile/ProfileSettings";
 
 const queryClient = new QueryClient();
 
@@ -36,32 +43,104 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             
+            {/* Profile Routes */}
+            <Route path="/profile">
+              <Route 
+                path="settings" 
+                element={
+                  <ProtectedRoute allowedRoles={['guest', 'host', 'admin']}>
+                    <ProfileSettings />
+                  </ProtectedRoute>
+                } 
+              />
+            </Route>
+            
             {/* Protected Routes */}
             <Route path="/dashboard">
-              <Route 
-                path="guest" 
-                element={
-                  <ProtectedRoute allowedRoles={['guest', 'admin']}>
-                    <GuestDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="host" 
-                element={
-                  <ProtectedRoute allowedRoles={['host', 'admin']}>
-                    <HostDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="admin" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } 
-              />
+              {/* Guest Dashboard Routes */}
+              <Route path="guest">
+                <Route 
+                  index
+                  element={
+                    <ProtectedRoute allowedRoles={['guest', 'admin']}>
+                      <GuestDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="bookings" 
+                  element={
+                    <ProtectedRoute allowedRoles={['guest', 'admin']}>
+                      <GuestBookings />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="saved" 
+                  element={
+                    <ProtectedRoute allowedRoles={['guest', 'admin']}>
+                      <GuestSaved />
+                    </ProtectedRoute>
+                  } 
+                />
+              </Route>
+              
+              {/* Host Dashboard Routes */}
+              <Route path="host">
+                <Route 
+                  index
+                  element={
+                    <ProtectedRoute allowedRoles={['host', 'admin']}>
+                      <HostDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="properties" 
+                  element={
+                    <ProtectedRoute allowedRoles={['host', 'admin']}>
+                      <HostProperties />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="bookings" 
+                  element={
+                    <ProtectedRoute allowedRoles={['host', 'admin']}>
+                      <HostBookings />
+                    </ProtectedRoute>
+                  } 
+                />
+              </Route>
+              
+              {/* Admin Dashboard Routes */}
+              <Route path="admin">
+                <Route 
+                  index
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="users" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminUsers />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="properties" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminProperties />
+                    </ProtectedRoute>
+                  } 
+                />
+              </Route>
+              
               {/* Default redirect based on role */}
               <Route 
                 index

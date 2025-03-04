@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, HomeIcon, MessageSquare, PlusCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -32,6 +33,7 @@ const properties = [
 
 const HostDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -60,6 +62,13 @@ const HostDashboard = () => {
                 <div className="space-y-2">
                   <p className="text-sm text-gray-500">Host since: Oct 2022</p>
                   <p className="text-sm font-medium">Properties: {properties.length}</p>
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4"
+                    onClick={() => navigate('/profile/settings')}
+                  >
+                    Edit Profile
+                  </Button>
                 </div>
               </Card>
             </div>
@@ -67,7 +76,10 @@ const HostDashboard = () => {
             <div className="md:w-3/4">
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Host Dashboard</h1>
-                <Button className="bg-primary hover:bg-primary/90">
+                <Button 
+                  className="bg-primary hover:bg-primary/90"
+                  onClick={() => navigate('/dashboard/host/properties')}
+                >
                   <PlusCircle size={16} className="mr-2" />
                   Add Property
                 </Button>
@@ -147,6 +159,15 @@ const HostDashboard = () => {
                       </div>
                     </Card>
                   ))}
+                  
+                  <div className="flex justify-end">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate('/dashboard/host/properties')}
+                    >
+                      View All Properties
+                    </Button>
+                  </div>
                 </TabsContent>
                 
                 <TabsContent value="bookings" className="space-y-4">
@@ -154,6 +175,14 @@ const HostDashboard = () => {
                     <h3 className="text-xl font-bold mb-4">Revenue Overview</h3>
                     <div className="p-8 text-center">
                       <p className="text-gray-500">Your revenue charts will appear here.</p>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/dashboard/host/bookings')}
+                      >
+                        View All Bookings
+                      </Button>
                     </div>
                   </Card>
                 </TabsContent>
@@ -180,6 +209,14 @@ const HostDashboard = () => {
                           <label className="text-sm text-gray-500">Email</label>
                           <p className="font-medium">{user?.email}</p>
                         </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          className="bg-primary hover:bg-primary/90"
+                          onClick={() => navigate('/profile/settings')}
+                        >
+                          Edit Profile
+                        </Button>
                       </div>
                     </div>
                   </Card>

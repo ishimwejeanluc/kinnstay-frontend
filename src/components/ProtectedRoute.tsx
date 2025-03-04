@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -10,22 +10,28 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect to the appropriate dashboard when role changes
+    if (user && !allowedRoles.includes(user.role)) {
+      if (user.role === 'guest') {
+        navigate('/dashboard/guest', { replace: true });
+      } else if (user.role === 'host') {
+        navigate('/dashboard/host', { replace: true });
+      } else if (user.role === 'admin') {
+        navigate('/dashboard/admin', { replace: true });
+      }
+    }
+  }, [user, allowedRoles, navigate]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   if (user && !allowedRoles.includes(user.role)) {
-    // Redirect to the appropriate dashboard based on user role
-    if (user.role === 'guest') {
-      return <Navigate to="/dashboard/guest" replace />;
-    } else if (user.role === 'host') {
-      return <Navigate to="/dashboard/host" replace />;
-    } else if (user.role === 'admin') {
-      return <Navigate to="/dashboard/admin" replace />;
-    }
-    // Fallback to home page
-    return <Navigate to="/" replace />;
+    // Return null while the useEffect handles the navigation
+    return null;
   }
 
   return <>{children}</>;
