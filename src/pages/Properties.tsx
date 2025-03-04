@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -210,7 +209,7 @@ const PropertiesPage = () => {
             {filteredProperties.map((property) => (
               <PropertyCard
                 key={property.id}
-                id={property.id}
+                propertyId={property.id}
                 title={property.title}
                 location={property.location}
                 price={property.price}
