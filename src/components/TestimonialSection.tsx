@@ -10,7 +10,7 @@ const testimonials = [
     name: 'Emily Johnson',
     location: 'New York, USA',
     rating: 5,
-    comment: 'Our stay at the beach villa was absolutely perfect. The views were breathtaking, and the amenities were top-notch. We're already planning our next visit!',
+    comment: "Our stay at the beach villa was absolutely perfect. The views were breathtaking, and the amenities were top-notch. We're already planning our next visit!",
     image: 'https://randomuser.me/api/portraits/women/1.jpg',
     property: 'Luxury Beach Villa'
   },
