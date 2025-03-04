@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
@@ -6,7 +5,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 // Sample property data
 const properties = [
@@ -71,8 +69,6 @@ const AdminProperties = () => {
           </Card>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

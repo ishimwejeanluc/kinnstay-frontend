@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Calendar } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 const GuestBookings = () => {
   const { user } = useAuth();
@@ -33,8 +32,6 @@ const GuestBookings = () => {
           </Card>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

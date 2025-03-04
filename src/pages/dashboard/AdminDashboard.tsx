@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
@@ -9,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 // Sample user data
 const users = [
@@ -32,7 +30,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <div className="flex-grow bg-gray-50 py-10">
+      <div className="flex-grow bg-gray-50 py-10 pt-24">
         <div className="container px-4 mx-auto">
           <div className="flex flex-col md:flex-row gap-8">
             <div className="md:w-1/4">
@@ -63,7 +61,7 @@ const AdminDashboard = () => {
             
             <div className="md:w-3/4">
               <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+                <h1 className="text-2xl font-bold">Admin Panel</h1>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -260,8 +258,6 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

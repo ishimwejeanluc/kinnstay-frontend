@@ -1,11 +1,9 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 // Sample property data
 const properties = [
@@ -77,8 +75,6 @@ const HostProperties = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
@@ -7,7 +6,6 @@ import { Calendar, Home, MessageSquare, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 const GuestDashboard = () => {
   const { user } = useAuth();
@@ -17,7 +15,7 @@ const GuestDashboard = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <div className="flex-grow bg-gray-50 py-10">
+      <div className="flex-grow bg-gray-50 py-10 pt-24">
         <div className="container px-4 mx-auto">
           <div className="flex flex-col md:flex-row gap-8">
             <div className="md:w-1/4">
@@ -168,8 +166,6 @@ const GuestDashboard = () => {
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };

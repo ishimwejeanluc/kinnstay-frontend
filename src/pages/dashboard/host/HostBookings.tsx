@@ -1,11 +1,9 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 
 // Sample bookings data
 const bookings = [
@@ -76,8 +74,6 @@ const HostBookings = () => {
           </Card>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };
