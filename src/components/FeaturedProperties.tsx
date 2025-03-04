@@ -12,6 +12,7 @@ const properties = [
     location: 'Malibu, California',
     price: 350,
     rating: 4.9,
+    reviewCount: 27,
     image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
     type: 'Villa'
   },
@@ -21,6 +22,7 @@ const properties = [
     location: 'Aspen, Colorado',
     price: 250,
     rating: 4.8,
+    reviewCount: 42,
     image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=765&q=80',
     type: 'Cabin'
   },
@@ -30,6 +32,7 @@ const properties = [
     location: 'New York, NY',
     price: 180,
     rating: 4.7,
+    reviewCount: 35,
     image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
     type: 'Apartment'
   },
@@ -39,6 +42,7 @@ const properties = [
     location: 'Cape Cod, Massachusetts',
     price: 220,
     rating: 4.6,
+    reviewCount: 18,
     image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
     type: 'Cottage'
   },
@@ -48,6 +52,7 @@ const properties = [
     location: 'Sedona, Arizona',
     price: 280,
     rating: 4.8,
+    reviewCount: 31,
     image: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
     type: 'Villa'
   },
@@ -57,6 +62,7 @@ const properties = [
     location: 'Lake Tahoe, Nevada',
     price: 310,
     rating: 4.9,
+    reviewCount: 24,
     image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
     type: 'House'
   }
@@ -149,7 +155,15 @@ const FeaturedProperties = () => {
                 className="w-[300px]"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <PropertyCard property={property} />
+                <PropertyCard
+                  propertyId={property.id.toString()}
+                  title={property.name}
+                  location={property.location}
+                  price={property.price}
+                  image={property.image}
+                  rating={property.rating}
+                  reviewCount={property.reviewCount}
+                />
               </div>
             ))}
           </div>
