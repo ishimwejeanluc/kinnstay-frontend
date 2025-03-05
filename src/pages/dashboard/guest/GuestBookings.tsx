@@ -67,6 +67,7 @@ const GuestBookings = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
+      {/* Dashboard Content */}
       <div className="flex-grow bg-gray-50 py-10 pt-24">
         <div className="container px-4 mx-auto">
           <div className="flex justify-between items-center mb-6">
