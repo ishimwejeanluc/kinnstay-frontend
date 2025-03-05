@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
@@ -257,7 +256,7 @@ const HostDashboard = () => {
                           <div>
                             <div className="flex items-center justify-between">
                               <h3 className="text-xl font-bold">{property.name}</h3>
-                              <Badge variant={property.status === 'active' ? 'success' : 'secondary'}>
+                              <Badge variant={property.status === 'active' ? 'secondary' : 'outline'}>
                                 {property.status}
                               </Badge>
                             </div>
