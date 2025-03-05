@@ -9,21 +9,16 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, getDashboardPath } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Redirect to the appropriate dashboard when role changes
     if (user && !allowedRoles.includes(user.role)) {
-      if (user.role === 'guest') {
-        navigate('/dashboard/guest', { replace: true });
-      } else if (user.role === 'host') {
-        navigate('/dashboard/host', { replace: true });
-      } else if (user.role === 'admin') {
-        navigate('/dashboard/admin', { replace: true });
-      }
+      const dashboardPath = getDashboardPath();
+      navigate(dashboardPath, { replace: true });
     }
-  }, [user, allowedRoles, navigate]);
+  }, [user, allowedRoles, navigate, getDashboardPath]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

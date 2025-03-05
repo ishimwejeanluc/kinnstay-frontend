@@ -12,10 +12,9 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, getDashboardPath } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +24,9 @@ const Login = () => {
       const success = await login(email, password);
       if (success) {
         toast.success('Login successful!');
-        navigate(from, { replace: true });
+        // Use the getDashboardPath function to navigate directly to the appropriate dashboard
+        const dashboardPath = getDashboardPath();
+        navigate(dashboardPath, { replace: true });
       } else {
         toast.error('Invalid credentials. Please try again.');
       }

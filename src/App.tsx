@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import About from "./pages/About";
@@ -27,6 +27,19 @@ import ProfileSettings from "./pages/profile/ProfileSettings";
 
 const queryClient = new QueryClient();
 
+// This component checks if a user is already authenticated,
+// and if so, redirects them to their dashboard
+const HomeRedirect = () => {
+  const { isAuthenticated, getDashboardPath } = useAuth();
+  
+  if (isAuthenticated) {
+    const dashboardPath = getDashboardPath();
+    return <Navigate to={dashboardPath} replace />;
+  }
+  
+  return <Index />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -35,7 +48,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<HomeRedirect />} />
             <Route path="/properties" element={<Properties />} />
             <Route path="/properties/:id" element={<PropertyDetail />} />
             <Route path="/about" element={<About />} />

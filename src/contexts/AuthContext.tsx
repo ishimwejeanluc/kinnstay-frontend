@@ -42,6 +42,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  getDashboardPath: () => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,6 +59,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(true);
     }
   }, []);
+
+  // Helper function to get the dashboard path based on user role
+  const getDashboardPath = (): string => {
+    if (!user) return '/';
+    
+    switch (user.role) {
+      case 'guest':
+        return '/dashboard/guest';
+      case 'host':
+        return '/dashboard/host';
+      case 'admin':
+        return '/dashboard/admin';
+      default:
+        return '/';
+    }
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     // For demo purposes, we'll use the sample users with any password
@@ -89,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, getDashboardPath }}>
       {children}
     </AuthContext.Provider>
   );
