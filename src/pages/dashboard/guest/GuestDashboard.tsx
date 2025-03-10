@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
@@ -6,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Home, Heart, Star, Receipt, CreditCard, History, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
+import GuestNavbar from '@/components/GuestNavbar';
+import GuestProperties from './GuestProperties';
 
 // Sample booking data
 const bookings = [
@@ -58,8 +58,7 @@ const GuestDashboard = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
+      <GuestNavbar />
       {/* Dashboard Content */}
       <div className="flex-grow bg-gray-50 py-10 pt-24">
         <div className="container px-4 mx-auto">
@@ -100,7 +99,7 @@ const GuestDashboard = () => {
                     <Button 
                       variant="ghost" 
                       className="w-full justify-start"
-                      onClick={() => navigate('/properties')}
+                      onClick={() => navigate('/guest-properties')}
                     >
                       <Home className="mr-2 h-4 w-4" />
                       Browse Properties
@@ -235,7 +234,7 @@ const GuestDashboard = () => {
                         <p className="text-gray-500 mb-4">You don't have any upcoming bookings.</p>
                         <Button 
                           className="bg-primary hover:bg-primary/90"
-                          onClick={() => navigate('/properties')}
+                          onClick={() => navigate('/guest-properties')}
                         >
                           Browse Properties
                         </Button>
@@ -343,7 +342,7 @@ const GuestDashboard = () => {
                         <p className="text-gray-500 mb-4">You don't have any upcoming bookings.</p>
                         <Button 
                           className="bg-primary hover:bg-primary/90"
-                          onClick={() => navigate('/properties')}
+                          onClick={() => navigate('/guest-properties')}
                         >
                           Browse Properties
                         </Button>
@@ -405,7 +404,7 @@ const GuestDashboard = () => {
                         <p className="text-gray-500 mb-4">You haven't saved any properties yet.</p>
                         <Button 
                           className="bg-primary hover:bg-primary/90"
-                          onClick={() => navigate('/properties')}
+                          onClick={() => navigate('/guest-properties')}
                         >
                           Browse Properties
                         </Button>

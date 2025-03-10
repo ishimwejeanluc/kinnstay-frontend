@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import Navbar from '@/components/Navbar';
+import HostNavbar from '@/components/HostNavbar';
 
 // Sample bookings data
 const bookings = [
@@ -32,7 +32,7 @@ const HostBookings = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <HostNavbar />
       
       <div className="flex-grow bg-gray-50 py-10 pt-24">
         <div className="container px-4 mx-auto">

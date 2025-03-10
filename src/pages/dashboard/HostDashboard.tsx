@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,8 +15,107 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
+import HostNavbar from '@/components/HostNavbar';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import { toast } from 'sonner';
+import { cloudinaryConfig } from '@/lib/cloudinary';
+
+// Fix Leaflet icon issue
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Update the getAddressFromCoordinates function
+const getAddressFromCoordinates = async (lat: number, lng: number) => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+    );
+    const data = await response.json();
+    
+    // Try to get the most specific city name available
+    const city = data.address.city || 
+                data.address.town || 
+                data.address.village || 
+                data.address.suburb ||
+                data.address.district ||
+                data.address.municipality;
+                
+    if (!city || !data.address.country) {
+      throw new Error('Could not determine both city and country');
+    }
+
+    return {
+      city: city,
+      country: data.address.country,
+      fullAddress: data.display_name
+    };
+  } catch (error) {
+    console.error('Error getting address:', error);
+    toast.error('Could not determine location. Please ensure you are at the property location.');
+    return null;
+  }
+};
+
+// Update the LocationMarker component
+function LocationMarker({ setPosition, setLocationAddress }) {
+  const [position, setPositionState] = useState(null);
+  const map = useMap();
+
+  useEffect(() => {
+    const handleLocationFound = async (e) => {
+      const { lat, lng } = e.latlng;
+      setPositionState(e.latlng);
+      setPosition(e.latlng);
+      map.flyTo(e.latlng, map.getZoom());
+      
+      try {
+        const address = await getAddressFromCoordinates(lat, lng);
+        if (address && address.city && address.country) {
+          setLocationAddress(address);
+          toast.success(`Location detected: ${address.city}, ${address.country}`);
+        } else {
+          toast.error('Could not determine city and country from this location. Please enter them manually.');
+        }
+      } catch (error) {
+        console.error('Error getting address:', error);
+        toast.error('Could not get location details. Please enter city and country manually.');
+      }
+    };
+
+    const handleLocationError = (e) => {
+      console.error('Location error:', e);
+      toast.error('Could not access GPS. Please ensure location access is enabled.');
+    };
+
+    const handleLocationTimeout = () => {
+      toast.error('Location detection timed out. Please try again or enter location manually.');
+    };
+
+    map.on('locationerror', handleLocationError);
+    map.on('locationtimeout', handleLocationTimeout);
+    map.locate({ timeout: 10000 }).on("locationfound", handleLocationFound);
+
+    return () => {
+      map.off("locationfound", handleLocationFound);
+      map.off('locationerror', handleLocationError);
+      map.off('locationtimeout', handleLocationTimeout);
+    };
+  }, [map, setPosition, setLocationAddress]);
+
+  return position === null ? null : (
+    <Marker position={position} />
+  );
+}
 
 // Sample property data
 const properties = [
@@ -90,13 +189,201 @@ const HostDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Add state to hold properties fetched from the API
+  const [fetchedProperties, setFetchedProperties] = useState([]);
+
+  // Fetch properties for the host
+  useEffect(() => {
+    const fetchProperties = async () => {
+      if (!user || !user.id) return; // Ensure user is logged in
+
+      const token = localStorage.getItem('authToken'); // Get the token from local storage
+      const hostId = user.id; // Store the host ID
+
+      console.log('Fetching properties for host ID:', hostId); // Log the host ID
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/properties/host/${hostId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+            'Content-Type': 'application/json' // Optional, depending on your API
+          }
+        });
+        if (!response.ok) throw new Error('Failed to fetch properties');
+
+        const data = await response.json();
+        setFetchedProperties(data); // Set the fetched properties
+      } catch (error) {
+        console.error('Error fetching properties:', error);
+      }
+    };
+
+    fetchProperties();
+  }, [user]);
+
   // Calculate earnings
   const totalEarnings = properties.reduce((sum, property) => sum + (property.price * property.bookings), 0);
   const monthlyEarnings = totalEarnings / 3; // Assuming the bookings are spread over 3 months
 
+  // Add state to manage form visibility
+  const [showForm, setShowForm] = useState(false);
+
+  // Add isUploading state
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Update formData state to handle price_per_night
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    location: '',
+    latitude: null,
+    longitude: null,
+    availableFrom: '',
+    availableUntil: '',
+    price_per_night: '',
+    pictures: [] as string[],
+    availability: {} // Initialize availability as an empty object
+  });
+
+  // Function to handle form submission
+  const handleAddProperty = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Ensure user is logged in and has a valid ID
+    if (!user || !user.id) {
+        toast.error('You must be logged in to add a property.');
+        return;
+    }
+
+    const propertyData = {
+        ...formData,
+        picture: formData.pictures.length > 0 ? formData.pictures : null, // Change 'pictures' to 'picture'
+        host_id: user.id, // Use the host ID from the user context
+        availability: {
+            availableFrom: formData.availableFrom,
+            availableUntil: formData.availableUntil
+        }
+    };
+
+    // Log the property data to be sent
+    const { availableFrom, availableUntil, ...dataToSend } = propertyData;
+    console.log('Property Data to be sent:', JSON.stringify(propertyData, null, 2));
+
+    try {
+        const token = localStorage.getItem('authToken'); // Get the token from local storage
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/properties`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+            },
+            body: JSON.stringify(dataToSend) // Send the modified data
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to add property');
+        }
+
+        const result = await response.json();
+        console.log('Property added successfully:', result);
+        toast.success('Property added successfully');
+        setShowForm(false); // Close the form after successful submission
+    } catch (error) {
+        console.error('Error adding property:', error);
+        toast.error('Failed to add property. Please try again.');
+    }
+  };
+
+  // Toggle form visibility
+  const toggleForm = () => setShowForm(!showForm);
+
+  // Update the form content to include the map
+  const [position, setPosition] = useState(null);
+
+  // Update the location fields when position changes
+  useEffect(() => {
+    if (position) {
+      setFormData(prev => ({
+        ...prev,
+        latitude: position.lat,
+        longitude: position.lng
+      }));
+
+      const fetchAddress = async () => {
+        try {
+          const address = await getAddressFromCoordinates(position.lat, position.lng);
+          if (address && address.city && address.country) {
+            setLocationAddress(address);
+            const locationString = `${address.city}, ${address.country}`;
+            setFormData(prev => ({
+              ...prev,
+              location: locationString
+            }));
+          } else {
+            toast.error('Location detected but city/country not found. Please enter them manually.');
+          }
+        } catch (error) {
+          console.error('Error updating location:', error);
+          toast.error('Error getting location details. Please enter city and country manually.');
+        }
+      };
+
+      fetchAddress();
+    }
+  }, [position]);
+
+  // In the main component, add state for location address
+  const [locationAddress, setLocationAddress] = useState({
+    city: '',
+    country: '',
+    fullAddress: ''
+  });
+
+  // Update the image upload function
+  const handleImageUpload = async (files: FileList) => {
+    setIsUploading(true);
+    const uploadedUrls: string[] = [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+        
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to upload image');
+        }
+
+        const data = await response.json();
+        uploadedUrls.push(data.secure_url);
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        pictures: [...prev.pictures, ...uploadedUrls]
+      }));
+      toast.success('Images uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error('Failed to upload images. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <HostNavbar />
       
       <div className="flex-grow bg-gray-50 py-10 pt-24">
         <div className="container px-4 mx-auto">
@@ -182,13 +469,170 @@ const HostDashboard = () => {
             <div className="md:w-3/4">
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Host Dashboard</h1>
-                <Button 
-                  className="bg-primary hover:bg-primary/90"
-                  onClick={() => navigate('/dashboard/host/properties/new')}
-                >
-                  <PlusCircle size={16} className="mr-2" />
-                  Add Property
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="bg-primary hover:bg-primary/90">
+                      <PlusCircle size={16} className="mr-2" />
+                      Add Property
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-bold">Add New Property</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleAddProperty} className="space-y-4 p-4">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Title</label>
+                          <Input 
+                            type="text" 
+                            required 
+                            className="mt-1" 
+                            placeholder="Enter property title"
+                            value={formData.title}
+                            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Description</label>
+                          <Textarea 
+                            className="mt-1" 
+                            placeholder="Describe your property"
+                            value={formData.description}
+                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Location</label>
+                          <Input 
+                            type="text" 
+                            required 
+                            className="mt-1" 
+                            placeholder="e.g., Kigali, Rwanda"
+                            value={formData.location}
+                            onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Enter location in format: City, Country (e.g., Kigali, Rwanda)
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">GPS Location</label>
+                          <div className="h-[300px] w-full rounded-md overflow-hidden">
+                            <MapContainer
+                              center={[1.9441, 30.0619]}
+                              zoom={13}
+                              className="h-full w-full"
+                            >
+                              <TileLayer
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                              />
+                              <LocationMarker setPosition={setPosition} setLocationAddress={setLocationAddress} />
+                            </MapContainer>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Use the map to set exact GPS coordinates for your property
+                          </p>
+                          {position && (
+                            <div className="mt-2 space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-xs text-gray-500">Latitude</label>
+                                  <Input type="text" value={position.lat} disabled className="mt-1" />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-500">Longitude</label>
+                                  <Input type="text" value={position.lng} disabled className="mt-1" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Availability Period</label>
+                          <div className="grid grid-cols-2 gap-4 mt-1">
+                            <div>
+                              <label className="block text-xs text-gray-500">Available From</label>
+                              <Input 
+                                type="date" 
+                                required 
+                                className="mt-1"
+                                value={formData.availableFrom}
+                                onChange={(e) => setFormData(prev => ({ ...prev, availableFrom: e.target.value }))}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500">Available Until</label>
+                              <Input 
+                                type="date" 
+                                required 
+                                className="mt-1"
+                                value={formData.availableUntil}
+                                onChange={(e) => setFormData(prev => ({ ...prev, availableUntil: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Price per Night ($)</label>
+                          <Input 
+                            type="number" 
+                            step="0.01" 
+                            required 
+                            className="mt-1"
+                            value={formData.price_per_night}
+                            onChange={(e) => setFormData(prev => ({ ...prev, price_per_night: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">pictures</label>
+                          <Input 
+                            type="file" 
+                            multiple 
+                            accept="image/*" 
+                            className="mt-1" 
+                            onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+                            disabled={isUploading}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {isUploading ? 'Uploading images...' : 'You can select multiple images'}
+                          </p>
+                          {formData.pictures.length > 0 && (
+                            <div className="mt-2 grid grid-cols-3 gap-2">
+                              {formData.pictures.map((url, index) => (
+                                <div key={index} className="relative">
+                                  <img 
+                                    src={url} 
+                                    alt={`Property ${index + 1}`} 
+                                    className="w-full h-24 object-cover rounded-md"
+                                  />
+                                  <button
+                                    type="button"
+                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                                    onClick={() => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        pictures: prev.pictures.filter((_, i) => i !== index)
+                                      }));
+                                    }}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
+                          Add Property
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -242,20 +686,20 @@ const HostDashboard = () => {
                 </TabsList>
                 
                 <TabsContent value="properties" className="space-y-4">
-                  {properties.map(property => (
+                  {fetchedProperties.map(property => (
                     <Card key={property.id} className="p-4">
                       <div className="flex flex-col md:flex-row gap-4">
                         <div className="md:w-1/4">
                           <img 
-                            src={property.image} 
-                            alt={property.name} 
+                            src={property.picture[0]}
+                            alt={property.title} 
                             className="w-full h-36 object-cover rounded-md"
                           />
                         </div>
                         <div className="md:w-3/4 flex flex-col justify-between">
                           <div>
                             <div className="flex items-center justify-between">
-                              <h3 className="text-xl font-bold">{property.name}</h3>
+                              <h3 className="text-xl font-bold">{property.title}</h3>
                               <Badge variant={property.status === 'active' ? 'secondary' : 'outline'}>
                                 {property.status}
                               </Badge>
@@ -264,15 +708,11 @@ const HostDashboard = () => {
                             <div className="flex items-center mt-2 flex-wrap gap-x-4 gap-y-2">
                               <div className="flex items-center">
                                 <DollarSign className="h-4 w-4 text-gray-500 mr-1" />
-                                <span className="text-sm font-medium">${property.price}/night</span>
+                                <span className="text-sm font-medium">${property.price_per_night}/night</span>
                               </div>
                               <div className="flex items-center">
                                 <Calendar className="h-4 w-4 text-gray-500 mr-1" />
-                                <span className="text-sm text-gray-500">{property.bookings} bookings</span>
-                              </div>
-                              <div className="flex items-center">
-                                <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                                <span className="text-sm text-gray-500">{property.rating} rating</span>
+                                <span className="text-sm text-gray-500">Available from {property.availability.availableFrom} to {property.availability.availableUntil}</span>
                               </div>
                             </div>
                           </div>

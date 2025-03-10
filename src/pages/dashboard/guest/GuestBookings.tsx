@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
+import GuestNavbar from '@/components/GuestNavbar';
 
 // Sample bookings data
 const allBookings = [
@@ -65,7 +65,7 @@ const GuestBookings = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <GuestNavbar />
       
       {/* Dashboard Content */}
       <div className="flex-grow bg-gray-50 py-10 pt-24">
@@ -74,7 +74,7 @@ const GuestBookings = () => {
             <h1 className="text-2xl font-bold">My Bookings</h1>
             <Button 
               className="bg-primary hover:bg-primary/90"
-              onClick={() => navigate('/properties')}
+              onClick={() => navigate('/guest-properties')}
             >
               Browse Properties
             </Button>

@@ -18,7 +18,7 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      
       <div className="flex-grow flex items-center justify-center py-20">
         <div className="container px-4 mx-auto">
           <div className="max-w-md mx-auto text-center">
@@ -35,7 +35,7 @@ const NotFound = () => {
           </div>
         </div>
       </div>
-      <Footer />
+      
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -20,22 +19,17 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const success = await login(email, password);
-      if (success) {
-        toast.success('Login successful!');
-        // Use the getDashboardPath function to navigate directly to the appropriate dashboard
-        const dashboardPath = getDashboardPath();
-        navigate(dashboardPath, { replace: true });
-      } else {
-        toast.error('Invalid credentials. Please try again.');
-      }
-    } catch (error) {
+    const success = await login(email, password);
+
+    if (success) {
+      toast.success('Login successful!');
+      const dashboardPath = getDashboardPath();
+      navigate(dashboardPath, { replace: true });
+    } else {
       toast.error('Login failed. Please try again.');
-      console.error('Login error:', error);
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (

@@ -5,8 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import GuestNavbar from '@/components/GuestNavbar';
+
 
 const ProfileSettings = () => {
   const { user } = useAuth();
@@ -44,7 +44,7 @@ const ProfileSettings = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <GuestNavbar />
       
       <div className="flex-grow bg-gray-50 py-10 pt-24">
         <div className="container px-4 mx-auto">
@@ -144,7 +144,7 @@ const ProfileSettings = () => {
         </div>
       </div>
       
-      <Footer />
+    
     </div>
   );
 };

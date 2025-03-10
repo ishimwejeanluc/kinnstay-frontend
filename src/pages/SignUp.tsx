@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +12,7 @@ const SignUp = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    phone: '',
     role: 'guest'
   });
   const [loading, setLoading] = useState(false);
@@ -38,12 +38,34 @@ const SignUp = () => {
     }
 
     try {
-      // In a real app, this would call an API to create the user
-      // For demo, we'll just simulate success and redirect to login
-      setTimeout(() => {
-        toast.success('Account created successfully! Please log in.');
-        navigate('/login');
-      }, 1000);
+      const requestBody = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        role: formData.role === 'guest' ? 'guest' : 'host',
+      };
+
+      console.log('Request Body:', requestBody); // Log the request body
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+      console.log('Response Status:', response.status);
+      console.log('Response Body:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create account');
+      }
+
+      toast.success('Account created successfully! Please log in.');
+      navigate('/login');
     } catch (error) {
       toast.error('Failed to create account. Please try again.');
       console.error('Signup error:', error);
@@ -102,6 +124,22 @@ const SignUp = () => {
                 />
               </div>
               
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Phone Number"
+                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
+                />
+              </div>
+
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
@@ -185,7 +223,6 @@ const SignUp = () => {
           </form>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

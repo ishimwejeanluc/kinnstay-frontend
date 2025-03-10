@@ -1,5 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
 // User types
 export type UserRole = 'guest' | 'host' | 'admin';
@@ -77,26 +77,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // For demo purposes, we'll use the sample users with any password
-    const lowerEmail = email.toLowerCase();
-    let matchedUser = null;
-    
-    if (lowerEmail === SAMPLE_USERS.guest.email) {
-      matchedUser = SAMPLE_USERS.guest;
-    } else if (lowerEmail === SAMPLE_USERS.host.email) {
-      matchedUser = SAMPLE_USERS.host;
-    } else if (lowerEmail === SAMPLE_USERS.admin.email) {
-      matchedUser = SAMPLE_USERS.admin;
-    }
-    
-    if (matchedUser) {
-      setUser(matchedUser);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Invalid credentials. Please try again.');
+      }
+
+      // Decode the token to get user information
+      const decodedToken = jwtDecode(data.token);
+      const user = {
+        id: (decodedToken as any).id,
+        name: (decodedToken as any).name,
+        email: (decodedToken as any).email,
+        role: (decodedToken as any).role,
+      };
+
+      setUser(user);
       setIsAuthenticated(true);
-      localStorage.setItem('kinnstay_user', JSON.stringify(matchedUser));
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('kinnstay_user', JSON.stringify(user));
       return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    
-    return false;
   };
 
   const logout = () => {

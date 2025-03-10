@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Heart, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
+import GuestNavbar from '@/components/GuestNavbar';
 
 // Sample saved properties
 const savedProperties = [
@@ -41,7 +41,7 @@ const GuestSaved = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <GuestNavbar/>
       
       <div className="flex-grow bg-gray-50 py-10 pt-24">
         <div className="container px-4 mx-auto">
@@ -49,7 +49,7 @@ const GuestSaved = () => {
             <h1 className="text-2xl font-bold">Saved Properties</h1>
             <Button 
               className="bg-primary hover:bg-primary/90"
-              onClick={() => navigate('/properties')}
+              onClick={() => navigate('/guest-properties')}
             >
               Browse Properties
             </Button>

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,9 +11,9 @@ import Contact from "./pages/Contact";
 import Properties from "./pages/Properties";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
-import GuestDashboard from "./pages/dashboard/GuestDashboard";
+import GuestDashboard from "./pages/dashboard/guest/GuestDashboard";
 import HostDashboard from "./pages/dashboard/HostDashboard";
-import AdminDashboard from "./pages/dashboard/AdminDashboard";
+import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 import GuestBookings from "./pages/dashboard/guest/GuestBookings";
 import GuestSaved from "./pages/dashboard/guest/GuestSaved";
 import HostProperties from "./pages/dashboard/host/HostProperties";
@@ -24,6 +23,7 @@ import AdminProperties from "./pages/dashboard/admin/AdminProperties";
 import PropertyDetail from "./pages/PropertyDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProfileSettings from "./pages/profile/ProfileSettings";
+import GuestProperties from './pages/dashboard/guest/GuestProperties';
 
 const queryClient = new QueryClient();
 
@@ -45,7 +45,19 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
-        <Sonner />
+        <Sonner
+          position="top-right"
+          toastOptions={{
+            style: {
+              backgroundColor: '#8B0000',
+              color: '#fff',
+            },
+            duration: 2000, // 2 seconds duration
+            closeButton: true,
+          }}
+          theme="dark"
+          visibleToasts={1} // Only show one toast at a time
+        />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<HomeRedirect />} />
@@ -160,6 +172,9 @@ const App = () => (
                 element={<Navigate to="/dashboard/guest" replace />} 
               />
             </Route>
+            
+            {/* Guest Properties Route */}
+            <Route path="/guest-properties" element={<GuestProperties />} />
             
             {/* Catch-all Route */}
             <Route path="*" element={<NotFound />} />

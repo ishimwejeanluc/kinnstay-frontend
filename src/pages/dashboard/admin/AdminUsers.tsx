@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import Navbar from '@/components/Navbar';
+import AdminNavbar from '@/components/AdminNavbar';
 
 // Sample user data
 const users = [
@@ -19,13 +19,11 @@ const AdminUsers = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <AdminNavbar />
       
       <div className="flex-grow bg-gray-50 py-10 pt-24">
         <div className="container px-4 mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">User Management</h1>
-          </div>
+          <h1 className="text-2xl font-bold">Manage Users</h1>
           
           <Card className="p-6">
             <div className="overflow-x-auto">
