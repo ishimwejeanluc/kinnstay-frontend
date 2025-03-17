@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,151 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import GuestNavbar from '@/components/GuestNavbar';
 
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+const CheckoutForm = ({ totalPrice, onClose, date, endDate, property }: { totalPrice: number, onClose: () => void, date: Date, endDate: Date, property: any }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const { user, isAuthenticated } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  const handlePayment = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!isAuthenticated) {
+      toast.error('Please log in to book this property');
+      return;
+    }
+
+    if (!stripe || !elements) {
+      toast.error('Stripe has not loaded yet.');
+      return;
+    }
+
+    const cardElement = elements.getElement(CardElement);
+
+    if (!cardElement) {
+      toast.error('Card element not found');
+      return;
+    }
+
+    setLoading(true);
+
+    // Retrieve the token from local storage
+    const token = localStorage.getItem('authToken'); // Ensure this token is valid
+
+    try {
+      // Fetch the client secret from your backend
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/payments/create-payment-intent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Include the token here
+        },
+        body: JSON.stringify({ 
+          amount: totalPrice * 100, // amount in cents
+          currency: 'usd' // Specify the currency here
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment intent');
+      }
+
+      const { clientSecret } = await response.json();
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: user?.name,
+            email: user?.email,
+          },
+        },
+      });
+
+      if (error) {
+        setLoading(false);
+        toast.error(`Payment failed: ${error.message}`);
+        return;
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        // Payment was successful, now create booking and payment records
+        const bookingResponse = await fetch(`${import.meta.env.VITE_API_URL}/bookings/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            guest_id: user.id,
+            property_id: property.id,
+            check_in: date.toISOString(),
+            check_out: endDate.toISOString(),
+            total_price: totalPrice,
+            status: 'confirmed',
+          }),
+        });
+
+        if (!bookingResponse.ok) {
+          throw new Error('Failed to create booking');
+        }
+
+        const paymentResponse = await fetch(`${import.meta.env.VITE_API_URL}/payments/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            booking_id: (await bookingResponse.json()).id,
+            guest_id: user.id,
+            amount: totalPrice,
+            payment_method: 'stripe',
+            status: 'paid',
+          }),
+        });
+
+        if (!paymentResponse.ok) {
+          throw new Error('Failed to record payment');
+        }
+
+        setLoading(false);
+        toast.success('Payment and booking successful!');
+        onClose();
+      }
+    } catch (error) {
+      setLoading(false);
+      toast.error('An error occurred while processing the payment.');
+    }
+  };
+
+  return (
+    <form onSubmit={handlePayment} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Name</label>
+        <Input type="text" placeholder="Your Name" defaultValue={user?.name || ''} required />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Email</label>
+        <Input type="email" placeholder="Your Email" defaultValue={user?.email || ''} required />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Card Details</label>
+        <CardElement
+          className="p-2 border rounded-md"
+          options={{
+            hidePostalCode: true,
+          }}
+        />
+      </div>
+      <Button type="submit" className="w-full py-2 mt-4" disabled={!stripe || loading}>
+        {loading ? 'Processing...' : `Pay $${totalPrice}`}
+      </Button>
+    </form>
+  );
+};
+
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [property, setProperty] = useState<any>(null);
@@ -22,6 +168,7 @@ const PropertyDetail = () => {
     new Date(new Date().setDate(new Date().getDate() + 7))
   );
   const [guests, setGuests] = useState(1);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const { user, isAuthenticated } = useAuth();
   
   // Fetch property details from the API
@@ -50,7 +197,7 @@ const PropertyDetail = () => {
   useEffect(() => {
     fetchPropertyDetails();
   }, [id]);
-
+  
   if (!property) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -64,24 +211,10 @@ const PropertyDetail = () => {
             </Link>
           </div>
         </div>
-        <Footer />
+        
       </div>
     );
   }
-
-  const handleBooking = () => {
-    if (!isAuthenticated) {
-      toast.error('Please log in to book this property', {
-        action: {
-          label: 'Login',
-          onClick: () => window.location.href = '/login'
-        }
-      });
-      return;
-    }
-    
-    toast.success('Booking successful! Check your dashboard for details.');
-  };
 
   const calculateTotalPrice = () => {
     if (!date || !endDate) return 0;
@@ -118,7 +251,7 @@ const PropertyDetail = () => {
             {property.picture && property.picture.map((image, index) => (
               <img 
                 key={index} 
-                src={image}
+                src={image} 
                 alt={`${property.title} ${index + 1}`} 
                 className="w-full h-[300px] object-cover rounded-xl"
               />
@@ -233,7 +366,7 @@ const PropertyDetail = () => {
                   </div>
                 </div>
                 
-                <Button className="w-full mb-4 py-6 text-lg" onClick={handleBooking}>
+                <Button className="w-full mb-4 py-6 text-lg" onClick={() => setShowPaymentModal(true)}>
                   Book Now
                 </Button>
                 
@@ -253,7 +386,25 @@ const PropertyDetail = () => {
         </div>
       </div>
       
-    
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Payment Details</h2>
+            <Elements stripe={stripePromise}>
+              <CheckoutForm 
+                totalPrice={calculateTotalPrice()} 
+                onClose={() => setShowPaymentModal(false)} 
+                date={date}
+                endDate={endDate}
+                property={property}
+              />
+            </Elements>
+            <Button className="mt-4" onClick={() => setShowPaymentModal(false)}>Cancel</Button>
+          </div>
+        </div>
+      )}
+      
+      <Footer />
     </div>
   );
 };

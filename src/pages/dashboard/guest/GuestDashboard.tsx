@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import GuestNavbar from '@/components/GuestNavbar';
 import GuestProperties from './GuestProperties';
+import { format, differenceInDays } from 'date-fns';
 
 // Sample booking data
 const bookings = [
@@ -55,6 +56,81 @@ const savedProperties = [
 const GuestDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
+  const [expiredBookings, setExpiredBookings] = useState<any[]>([]);
+
+  // Fetch recent bookings
+  const fetchRecentBookings = async () => {
+    const token = localStorage.getItem('authToken');
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/bookings/recent/${user.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch recent bookings');
+      const data = await response.json();
+      setRecentBookings(data);
+    } catch (error) {
+      console.error('Error fetching recent bookings:', error);
+    }
+  };
+
+  // Fetch upcoming bookings
+  const fetchUpcomingBookings = async () => {
+    const token = localStorage.getItem('authToken');
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/bookings/upcoming/${user.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch upcoming bookings');
+      const data = await response.json();
+      setUpcomingBookings(data);
+    } catch (error) {
+      console.error('Error fetching upcoming bookings:', error);
+    }
+  };
+
+  // Fetch expired bookings
+  const fetchExpiredBookings = async () => {
+    const token = localStorage.getItem('authToken');
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/bookings/expired/${user.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch expired bookings');
+      const data = await response.json();
+      setExpiredBookings(data);
+    } catch (error) {
+      console.error('Error fetching expired bookings:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecentBookings();
+    fetchUpcomingBookings();
+    fetchExpiredBookings();
+  }, [user.id]);
+
+  console.log('Upcoming Bookings:', upcomingBookings);
+
+  // Add a function to calculate nights between dates
+  const calculateNights = (checkIn: string, checkOut: string) => {
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    return differenceInDays(end, start);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -67,11 +143,17 @@ const GuestDashboard = () => {
               <Card className="p-6">
                 <div className="flex flex-col items-center text-center mb-6">
                   <div className="w-24 h-24 rounded-full overflow-hidden mb-4">
-                    <img 
-                      src={user?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
+                    {user?.profile_picture ? (
+                      <img 
+                        src={user.profile_picture} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                        <span className="text-gray-500">No Image</span>
+                      </div>
+                    )}
                   </div>
                   <h2 className="text-xl font-bold">{user?.name || "Guest User"}</h2>
                   <p className="text-gray-500">{user?.email || "guest@example.com"}</p>
@@ -170,7 +252,7 @@ const GuestDashboard = () => {
                       <div className="bg-blue-100 p-3 rounded-full mb-3">
                         <Calendar className="h-6 w-6 text-blue-700" />
                       </div>
-                      <h3 className="text-lg font-medium">{bookings.filter(b => b.status === 'upcoming').length}</h3>
+                      <h3 className="text-lg font-medium">{upcomingBookings.length}</h3>
                       <p className="text-gray-500">Upcoming Stays</p>
                     </Card>
                     
@@ -193,36 +275,44 @@ const GuestDashboard = () => {
                   
                   <Card className="p-6">
                     <h3 className="text-xl font-bold mb-4">Your Upcoming Stay</h3>
-                    {bookings.filter(b => b.status === 'upcoming').length > 0 ? (
+                    {upcomingBookings.length > 0 ? (
                       <div className="flex flex-col md:flex-row gap-4">
                         <div className="md:w-1/3">
                           <img 
-                            src={bookings.filter(b => b.status === 'upcoming')[0].image} 
-                            alt={bookings.filter(b => b.status === 'upcoming')[0].property} 
+                            src={upcomingBookings[0].property?.picture?.[0]}
+                            alt={upcomingBookings[0].property?.title || 'Property Image'}
                             className="w-full h-36 object-cover rounded-md"
                           />
                         </div>
                         <div className="md:w-2/3">
-                          <h4 className="font-bold text-lg">{bookings.filter(b => b.status === 'upcoming')[0].property}</h4>
-                          <p className="text-gray-500">{bookings.filter(b => b.status === 'upcoming')[0].location}</p>
+                          <h4 className="font-bold text-lg">{upcomingBookings[0].property?.title}</h4>
+                          <p className="text-gray-500">
+                            {upcomingBookings[0].property?.location}
+                          </p>
                           <div className="flex flex-wrap gap-4 mt-2">
                             <div>
                               <p className="text-sm text-gray-500">Check-in</p>
-                              <p className="font-medium">{bookings.filter(b => b.status === 'upcoming')[0].checkIn}</p>
+                              <p className="font-medium">
+                                {format(new Date(upcomingBookings[0].check_in), 'MMM dd, yyyy')}
+                              </p>
                             </div>
                             <div>
                               <p className="text-sm text-gray-500">Check-out</p>
-                              <p className="font-medium">{bookings.filter(b => b.status === 'upcoming')[0].checkOut}</p>
+                              <p className="font-medium">
+                                {format(new Date(upcomingBookings[0].check_out), 'MMM dd, yyyy')}
+                              </p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-500">Total</p>
-                              <p className="font-medium">${bookings.filter(b => b.status === 'upcoming')[0].totalPrice}</p>
+                              <p className="text-sm text-gray-500">
+                                {calculateNights(upcomingBookings[0].check_in, upcomingBookings[0].check_out)} nights
+                              </p>
+                              <p className="font-medium">${upcomingBookings[0].total_price}</p>
                             </div>
                           </div>
                           <div className="mt-4">
                             <Button 
                               className="bg-primary hover:bg-primary/90"
-                              onClick={() => navigate(`/bookings/${bookings.filter(b => b.status === 'upcoming')[0].id}`)}
+                              onClick={() => navigate(`/bookings/${upcomingBookings[0].id}`)}
                             >
                               View Details
                             </Button>
@@ -287,50 +377,33 @@ const GuestDashboard = () => {
                 <TabsContent value="bookings" className="space-y-4">
                   <Card className="p-6">
                     <h3 className="text-xl font-bold mb-4">Your Upcoming Bookings</h3>
-                    {bookings.filter(b => b.status === 'upcoming').length > 0 ? (
+                    {upcomingBookings.length > 0 ? (
                       <div className="space-y-4">
-                        {bookings.filter(b => b.status === 'upcoming').map(booking => (
+                        {upcomingBookings.map(booking => (
                           <div key={booking.id} className="border rounded-lg p-4">
-                            <div className="flex flex-col md:flex-row gap-4">
-                              <div className="md:w-1/4">
+                            <div className="flex gap-4">
+                              <div className="w-24 h-24">
                                 <img 
-                                  src={booking.image} 
-                                  alt={booking.property} 
-                                  className="w-full h-36 object-cover rounded-md"
+                                  src={booking.property?.picture?.[0] || '/placeholder-image.jpg'}
+                                  alt={booking.property?.title || 'Property Image'}
+                                  className="w-full h-full object-cover rounded-md"
                                 />
                               </div>
-                              <div className="md:w-3/4 flex flex-col justify-between">
-                                <div>
-                                  <h4 className="font-bold text-lg">{booking.property}</h4>
-                                  <p className="text-gray-500">{booking.location}</p>
-                                  <div className="flex flex-wrap gap-4 mt-2">
-                                    <div>
-                                      <p className="text-sm text-gray-500">Check-in</p>
-                                      <p className="font-medium">{booking.checkIn}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm text-gray-500">Check-out</p>
-                                      <p className="font-medium">{booking.checkOut}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm text-gray-500">Total</p>
-                                      <p className="font-medium">${booking.totalPrice}</p>
-                                    </div>
+                              <div>
+                                <h4 className="font-bold">{booking.property?.title || 'Property'}</h4>
+                                <p className="text-gray-500">{booking.property?.location || 'Location not available'}</p>
+                                <div className="flex gap-4 mt-2">
+                                  <div>
+                                    <p className="text-sm text-gray-500">
+                                      {format(new Date(booking.check_in), 'MMM dd, yyyy')} - {format(new Date(booking.check_out), 'MMM dd, yyyy')}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      {calculateNights(booking.check_in, booking.check_out)} nights
+                                    </p>
                                   </div>
-                                </div>
-                                <div className="flex gap-2 mt-4">
-                                  <Button 
-                                    variant="default"
-                                    onClick={() => navigate(`/bookings/${booking.id}`)}
-                                  >
-                                    View Details
-                                  </Button>
-                                  <Button 
-                                    variant="outline"
-                                    className="text-red-500 border-red-200 hover:bg-red-50"
-                                  >
-                                    Cancel Booking
-                                  </Button>
+                                  <div>
+                                    <p className="font-medium">Total: ${booking.total_price}</p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -338,24 +411,8 @@ const GuestDashboard = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-8 text-center">
-                        <p className="text-gray-500 mb-4">You don't have any upcoming bookings.</p>
-                        <Button 
-                          className="bg-primary hover:bg-primary/90"
-                          onClick={() => navigate('/guest-properties')}
-                        >
-                          Browse Properties
-                        </Button>
-                      </div>
+                      <p>No upcoming bookings found.</p>
                     )}
-                    <div className="flex justify-end mt-4">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => navigate('/dashboard/guest/bookings')}
-                      >
-                        View All Bookings
-                      </Button>
-                    </div>
                   </Card>
                 </TabsContent>
                 
@@ -424,47 +481,33 @@ const GuestDashboard = () => {
                 <TabsContent value="history" className="space-y-4">
                   <Card className="p-6">
                     <h3 className="text-xl font-bold mb-4">Booking History</h3>
-                    {bookings.filter(b => b.status === 'completed').length > 0 ? (
+                    {expiredBookings.length > 0 ? (
                       <div className="space-y-4">
-                        {bookings.filter(b => b.status === 'completed').map(booking => (
+                        {expiredBookings.map(booking => (
                           <div key={booking.id} className="border rounded-lg p-4">
-                            <div className="flex flex-col md:flex-row gap-4">
-                              <div className="md:w-1/4">
+                            <div className="flex gap-4">
+                              <div className="w-24 h-24">
                                 <img 
-                                  src={booking.image} 
-                                  alt={booking.property} 
-                                  className="w-full h-36 object-cover rounded-md"
+                                  src={booking.property?.picture || '/placeholder-image.jpg'}
+                                  alt={booking.property?.title || 'Property Image'}
+                                  className="w-full h-full object-cover rounded-md"
                                 />
                               </div>
-                              <div className="md:w-3/4 flex flex-col justify-between">
-                                <div>
-                                  <h4 className="font-bold text-lg">{booking.property}</h4>
-                                  <p className="text-gray-500">{booking.location}</p>
-                                  <div className="flex flex-wrap gap-4 mt-2">
-                                    <div>
-                                      <p className="text-sm text-gray-500">Stay dates</p>
-                                      <p className="font-medium">{booking.checkIn} - {booking.checkOut}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm text-gray-500">Total paid</p>
-                                      <p className="font-medium">${booking.totalPrice}</p>
-                                    </div>
+                              <div>
+                                <h4 className="font-bold">{booking.property?.title || 'Property'}</h4>
+                                <p className="text-gray-500">{booking.property?.location || 'Location not available'}</p>
+                                <div className="flex gap-4 mt-2">
+                                  <div>
+                                    <p className="text-sm text-gray-500">
+                                      {format(new Date(booking.check_in), 'MMM dd, yyyy')} - {format(new Date(booking.check_out), 'MMM dd, yyyy')}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      {calculateNights(booking.check_in, booking.check_out)} nights
+                                    </p>
                                   </div>
-                                </div>
-                                <div className="flex gap-2 mt-4">
-                                  <Button 
-                                    variant="outline"
-                                    onClick={() => navigate(`/bookings/${booking.id}`)}
-                                  >
-                                    <Receipt className="h-4 w-4 mr-2" />
-                                    View Receipt
-                                  </Button>
-                                  <Button 
-                                    variant="default"
-                                  >
-                                    <Star className="h-4 w-4 mr-2" />
-                                    Leave Review
-                                  </Button>
+                                  <div>
+                                    <p className="font-medium">Total: ${booking.total_price}</p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -472,9 +515,7 @@ const GuestDashboard = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-8 text-center">
-                        <p className="text-gray-500">You don't have any completed stays yet.</p>
-                      </div>
+                      <p>No expired bookings found.</p>
                     )}
                   </Card>
                 </TabsContent>

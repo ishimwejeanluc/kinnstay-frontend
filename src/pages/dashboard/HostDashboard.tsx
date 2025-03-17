@@ -25,6 +25,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { toast } from 'sonner';
 import { cloudinaryConfig } from '@/lib/cloudinary';
+import { format } from 'date-fns';
 
 // Fix Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -189,42 +190,43 @@ const HostDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Add state to hold properties fetched from the API
+  // State to hold properties fetched from the API
   const [fetchedProperties, setFetchedProperties] = useState([]);
 
   // Fetch properties for the host
+  const fetchProperties = async () => {
+    if (!user || !user.id) return; // Ensure user is logged in
+
+    const token = localStorage.getItem('authToken'); // Get the token from local storage
+    const hostId = user.id; // Store the host ID
+
+    console.log('Fetching properties for host ID:', hostId); // Log the host ID
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/properties/host/${hostId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+          'Content-Type': 'application/json' // Optional, depending on your API
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch properties');
+
+      const data = await response.json();
+      setFetchedProperties(data); // Set the fetched properties
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    }
+  };
+
+  // Fetch properties on component mount
   useEffect(() => {
-    const fetchProperties = async () => {
-      if (!user || !user.id) return; // Ensure user is logged in
-
-      const token = localStorage.getItem('authToken'); // Get the token from local storage
-      const hostId = user.id; // Store the host ID
-
-      console.log('Fetching properties for host ID:', hostId); // Log the host ID
-
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/properties/host/${hostId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
-            'Content-Type': 'application/json' // Optional, depending on your API
-          }
-        });
-        if (!response.ok) throw new Error('Failed to fetch properties');
-
-        const data = await response.json();
-        setFetchedProperties(data); // Set the fetched properties
-      } catch (error) {
-        console.error('Error fetching properties:', error);
-      }
-    };
-
     fetchProperties();
   }, [user]);
 
   // Calculate earnings
-  const totalEarnings = properties.reduce((sum, property) => sum + (property.price * property.bookings), 0);
-  const monthlyEarnings = totalEarnings / 3; // Assuming the bookings are spread over 3 months
+  const sampleTotalEarnings = properties.reduce((sum, property) => sum + (property.price * property.bookings), 0);
+  const monthlyEarnings = sampleTotalEarnings / 3; // Assuming the bookings are spread over 3 months
 
   // Add state to manage form visibility
   const [showForm, setShowForm] = useState(false);
@@ -252,18 +254,18 @@ const HostDashboard = () => {
 
     // Ensure user is logged in and has a valid ID
     if (!user || !user.id) {
-        toast.error('You must be logged in to add a property.');
-        return;
+      toast.error('You must be logged in to add a property.');
+      return;
     }
 
     const propertyData = {
-        ...formData,
-        picture: formData.pictures.length > 0 ? formData.pictures : null, // Change 'pictures' to 'picture'
-        host_id: user.id, // Use the host ID from the user context
-        availability: {
-            availableFrom: formData.availableFrom,
-            availableUntil: formData.availableUntil
-        }
+      ...formData,
+      picture: formData.pictures.length > 0 ? formData.pictures : null, // Change 'pictures' to 'picture'
+      host_id: user.id, // Use the host ID from the user context
+      availability: {
+        availableFrom: formData.availableFrom,
+        availableUntil: formData.availableUntil
+      }
     };
 
     // Log the property data to be sent
@@ -271,27 +273,41 @@ const HostDashboard = () => {
     console.log('Property Data to be sent:', JSON.stringify(propertyData, null, 2));
 
     try {
-        const token = localStorage.getItem('authToken'); // Get the token from local storage
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/properties`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // Include the token in the Authorization header
-            },
-            body: JSON.stringify(dataToSend) // Send the modified data
-        });
+      const token = localStorage.getItem('authToken'); // Get the token from local storage
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/properties`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+        },
+        body: JSON.stringify(dataToSend) // Send the modified data
+      });
 
-        if (!response.ok) {
-            throw new Error('Failed to add property');
-        }
+      if (!response.ok) {
+        throw new Error('Failed to add property');
+      }
 
-        const result = await response.json();
-        console.log('Property added successfully:', result);
-        toast.success('Property added successfully');
-        setShowForm(false); // Close the form after successful submission
+      const result = await response.json();
+      console.log('Property added successfully:', result);
+      toast.success('Property added successfully');
+      setShowForm(false); // Close the form after successful submission
+      setFormData(prev => ({ 
+        ...prev, 
+        title: '', 
+        description: '', 
+        location: '', 
+        price_per_night: '', 
+        pictures: [], 
+        latitude: null, 
+        longitude: null, 
+        availableFrom: '', 
+        availableUntil: '', 
+        availability: {} 
+      })); // Reset form
+      fetchProperties(); // Ensure properties are re-fetched after adding
     } catch (error) {
-        console.error('Error adding property:', error);
-        toast.error('Failed to add property. Please try again.');
+      console.error('Error adding property:', error);
+      toast.error('Failed to add property. Please try again.');
     }
   };
 
@@ -381,6 +397,98 @@ const HostDashboard = () => {
     }
   };
 
+  // State to hold booking requests
+  const [bookingRequests, setBookingRequests] = useState<any[]>([]);
+
+  // State to hold earnings data
+  const [earningsData, setEarningsData] = useState<{
+    earnings: Array<{ month: string; totalRevenue: string }>;
+    recentTransactions: Array<{
+      id: string;
+      amount: string;
+      created_at: string;
+      booking: {
+        id: string;
+        property: {
+          id: string;
+          title: string;
+        };
+      };
+    }>;
+  }>({
+    earnings: [],
+    recentTransactions: []
+  });
+
+  // Fetch booking requests for the host
+  useEffect(() => {
+    const fetchBookingRequests = async () => {
+      if (!user || !user.id) return; // Ensure user is logged in
+
+      const token = localStorage.getItem('authToken'); // Get the token from local storage
+      const hostId = user.id; // Store the host ID
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/bookings/recent-by-host/${hostId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!response.ok) throw new Error('Failed to fetch booking requests');
+
+        const data = await response.json();
+        setBookingRequests(data); // Set the fetched booking requests
+      } catch (error) {
+        console.error('Error fetching booking requests:', error);
+        toast.error('Failed to fetch booking requests.');
+      }
+    };
+
+    fetchBookingRequests();
+  }, [user]);
+
+  // Fetch earnings data for the host
+  useEffect(() => {
+    const fetchEarningsData = async () => {
+      if (!user || !user.id) return; // Ensure user is logged in
+
+      const token = localStorage.getItem('authToken'); // Get the token from local storage
+      const hostId = user.id; // Store the host ID
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/bookings/host-earnings/${hostId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`, // Include the token in the Authorization header
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!response.ok) throw new Error('Failed to fetch earnings data');
+
+        const data = await response.json();
+        setEarningsData(data); // Set the fetched earnings data
+      } catch (error) {
+        console.error('Error fetching earnings data:', error);
+        toast.error('Failed to fetch earnings data.');
+      }
+    };
+
+    fetchEarningsData();
+  }, [user]);
+
+  // Calculate total earnings from the earnings data
+  const totalEarnings = earningsData.earnings.reduce(
+    (sum, month) => sum + parseFloat(month.totalRevenue), 
+    0
+  ).toFixed(2);
+
+  // Get current month's earnings
+  const currentMonthEarnings = earningsData.earnings.length > 0 
+    ? parseFloat(earningsData.earnings[0].totalRevenue).toFixed(2) 
+    : "0.00";
+
   return (
     <div className="min-h-screen flex flex-col">
       <HostNavbar />
@@ -392,11 +500,17 @@ const HostDashboard = () => {
               <Card className="p-6">
                 <div className="flex flex-col items-center text-center mb-6">
                   <div className="w-24 h-24 rounded-full overflow-hidden mb-4">
-                    <img 
-                      src={user?.avatar || "https://randomuser.me/api/portraits/women/44.jpg"} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
+                    {user?.profile_picture ? (
+                      <img 
+                        src={user.profile_picture} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                        <span className="text-gray-500">No Image</span>
+                      </div>
+                    )}
                   </div>
                   <h2 className="text-xl font-bold">{user?.name || "Host User"}</h2>
                   <p className="text-gray-500">{user?.email || "host@example.com"}</p>
@@ -406,9 +520,7 @@ const HostDashboard = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-500">Host since: Oct 2022</p>
-                  <p className="text-sm font-medium">Properties: {properties.length}</p>
-                  <p className="text-sm font-medium">Overall Rating: 4.85</p>
+                  <p className="text-sm font-medium">Properties: {fetchedProperties.length}</p>
                   <Button 
                     variant="outline" 
                     className="w-full mt-4"
@@ -640,7 +752,7 @@ const HostDashboard = () => {
                   <div className="bg-blue-100 p-3 rounded-full mb-3">
                     <HomeIcon className="h-6 w-6 text-blue-700" />
                   </div>
-                  <h3 className="text-lg font-medium">{properties.length}</h3>
+                  <h3 className="text-lg font-medium">{fetchedProperties.length}</h3>
                   <p className="text-gray-500">Active Listings</p>
                 </Card>
                 
@@ -648,7 +760,7 @@ const HostDashboard = () => {
                   <div className="bg-green-100 p-3 rounded-full mb-3">
                     <DollarSign className="h-6 w-6 text-green-700" />
                   </div>
-                  <h3 className="text-lg font-medium">${monthlyEarnings.toFixed(0)}</h3>
+                  <h3 className="text-lg font-medium">${currentMonthEarnings}</h3>
                   <p className="text-gray-500">Monthly Revenue</p>
                 </Card>
                 
@@ -686,63 +798,70 @@ const HostDashboard = () => {
                 </TabsList>
                 
                 <TabsContent value="properties" className="space-y-4">
-                  {fetchedProperties.map(property => (
-                    <Card key={property.id} className="p-4">
-                      <div className="flex flex-col md:flex-row gap-4">
-                        <div className="md:w-1/4">
-                          <img 
-                            src={property.picture[0]}
-                            alt={property.title} 
-                            className="w-full h-36 object-cover rounded-md"
-                          />
-                        </div>
-                        <div className="md:w-3/4 flex flex-col justify-between">
-                          <div>
-                            <div className="flex items-center justify-between">
-                              <h3 className="text-xl font-bold">{property.title}</h3>
-                              <Badge variant={property.status === 'active' ? 'secondary' : 'outline'}>
-                                {property.status}
-                              </Badge>
-                            </div>
-                            <p className="text-gray-500">{property.location}</p>
-                            <div className="flex items-center mt-2 flex-wrap gap-x-4 gap-y-2">
-                              <div className="flex items-center">
-                                <DollarSign className="h-4 w-4 text-gray-500 mr-1" />
-                                <span className="text-sm font-medium">${property.price_per_night}/night</span>
-                              </div>
-                              <div className="flex items-center">
-                                <Calendar className="h-4 w-4 text-gray-500 mr-1" />
-                                <span className="text-sm text-gray-500">Available from {property.availability.availableFrom} to {property.availability.availableUntil}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex justify-end mt-4 gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigate(`/dashboard/host/properties/${property.id}`)}
-                            >
-                              View
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigate(`/dashboard/host/properties/${property.id}/edit`)}
-                            >
-                              Edit
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="text-red-500 border-red-200 hover:bg-red-50"
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
+                  {fetchedProperties.length === 0 ? (
+                    <Card className="p-6">
+                      <h3 className="text-xl font-bold">No Properties Available</h3>
+                      <p className="text-gray-500">You currently have no properties listed. Please add a property to get started.</p>
                     </Card>
-                  ))}
+                  ) : (
+                    fetchedProperties.map(property => (
+                      <Card key={property.id} className="p-4">
+                        <div className="flex flex-col md:flex-row gap-4">
+                          <div className="md:w-1/4">
+                            <img 
+                              src={property.picture[0]}
+                              alt={property.title} 
+                              className="w-full h-36 object-cover rounded-md"
+                            />
+                          </div>
+                          <div className="md:w-3/4 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-xl font-bold">{property.title}</h3>
+                                <Badge variant={property.status === 'active' ? 'secondary' : 'outline'}>
+                                  {property.status}
+                                </Badge>
+                              </div>
+                              <p className="text-gray-500">{property.location}</p>
+                              <div className="flex items-center mt-2 flex-wrap gap-x-4 gap-y-2">
+                                <div className="flex items-center">
+                                  <DollarSign className="h-4 w-4 text-gray-500 mr-1" />
+                                  <span className="text-sm font-medium">${property.price_per_night}/night</span>
+                                </div>
+                                <div className="flex items-center">
+                                  <Calendar className="h-4 w-4 text-gray-500 mr-1" />
+                                  <span className="text-sm text-gray-500">Available from {property.availability.availableFrom} to {property.availability.availableUntil}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex justify-end mt-4 gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => navigate(`/dashboard/host/properties/${property.id}`)}
+                              >
+                                View
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => navigate(`/dashboard/host/properties/${property.id}/edit`)}
+                              >
+                                Edit
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-red-500 border-red-200 hover:bg-red-50"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  )}
                   
                   <div className="flex justify-end">
                     <Button 
@@ -764,18 +883,18 @@ const HostDashboard = () => {
                             <div className="flex flex-col md:flex-row gap-4">
                               <div className="md:w-2/3">
                                 <div className="flex justify-between">
-                                  <h4 className="font-bold">{request.guest}</h4>
+                                  <h4 className="font-bold">{request.guest.name}</h4>
                                   <Badge variant="outline">{request.status}</Badge>
                                 </div>
-                                <p className="text-gray-700">{request.property}</p>
+                                <p className="text-gray-700">{request.property.title}</p>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
                                   <div>
                                     <p className="text-xs text-gray-500">Check-in</p>
-                                    <p className="text-sm">{request.checkIn}</p>
+                                    <p className="text-sm">{new Date(request.check_in).toLocaleDateString()}</p>
                                   </div>
                                   <div>
                                     <p className="text-xs text-gray-500">Check-out</p>
-                                    <p className="text-sm">{request.checkOut}</p>
+                                    <p className="text-sm">{new Date(request.check_out).toLocaleDateString()}</p>
                                   </div>
                                   <div>
                                     <p className="text-xs text-gray-500">Guests</p>
@@ -783,7 +902,7 @@ const HostDashboard = () => {
                                   </div>
                                   <div>
                                     <p className="text-xs text-gray-500">Total</p>
-                                    <p className="text-sm font-medium">${request.totalAmount}</p>
+                                    <p className="text-sm font-medium">${request.total_price}</p>
                                   </div>
                                 </div>
                               </div>
@@ -833,33 +952,44 @@ const HostDashboard = () => {
                       </Card>
                       <Card className="p-4 bg-gray-50">
                         <p className="text-gray-500 text-sm">This Month</p>
-                        <p className="text-2xl font-bold">${monthlyEarnings.toFixed(0)}</p>
+                        <p className="text-2xl font-bold">${currentMonthEarnings}</p>
                       </Card>
                       <Card className="p-4 bg-gray-50">
                         <p className="text-gray-500 text-sm">Pending Payments</p>
-                        <p className="text-2xl font-bold">$750</p>
+                        <p className="text-2xl font-bold">$0.00</p>
                       </Card>
                     </div>
-                    <div className="p-8 text-center bg-gray-50 rounded-lg">
-                      <p className="text-gray-500">Earnings chart will appear here</p>
+                    <div className="p-8 bg-gray-50 rounded-lg">
+                      <h4 className="font-bold mb-4">Monthly Earnings</h4>
+                      <div className="space-y-2">
+                        {earningsData.earnings.map((month, index) => (
+                          <div key={index} className="flex justify-between items-center p-3 bg-white rounded-lg">
+                            <p className="font-medium">
+                              {format(new Date(month.month), 'MMMM yyyy')}
+                            </p>
+                            <span className="font-medium text-green-600">
+                              ${parseFloat(month.totalRevenue).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div className="mt-6">
                       <h4 className="font-bold mb-2">Recent Transactions</h4>
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <p className="font-medium">Booking #1234</p>
-                            <p className="text-sm text-gray-500">July 15, 2023</p>
+                        {earningsData.recentTransactions.map(transaction => (
+                          <div key={transaction.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <p className="font-medium">{transaction.booking.property.title}</p>
+                              <p className="text-sm text-gray-500">
+                                {format(new Date(transaction.created_at), 'MMM dd, yyyy')}
+                              </p>
+                            </div>
+                            <span className="font-medium text-green-600">
+                              +${parseFloat(transaction.amount).toFixed(2)}
+                            </span>
                           </div>
-                          <span className="font-medium text-green-600">+$350</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <p className="font-medium">Booking #1235</p>
-                            <p className="text-sm text-gray-500">July 20, 2023</p>
-                          </div>
-                          <span className="font-medium text-green-600">+$220</span>
-                        </div>
+                        ))}
                       </div>
                     </div>
                   </Card>

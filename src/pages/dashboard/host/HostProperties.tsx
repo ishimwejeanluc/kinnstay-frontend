@@ -235,33 +235,40 @@ const HostProperties = () => {
           </div>
           
           <div className="space-y-4">
-            {fetchedProperties.map(property => (
-              <Card key={property.id} className="p-4">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="md:w-1/4">
-                    <img 
-                      src={property.picture[0]} 
-                      alt={property.title} 
-                      className="w-full h-36 object-cover rounded-md"
-                    />
-                  </div>
-                  <div className="md:w-3/4 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold">{property.title}</h3>
-                      <p className="text-gray-500">{property.location}</p>
-                      <div className="flex items-center mt-2">
-                        <span className="text-sm font-medium mr-4">${property.price_per_night}/night</span>
-                        <span className="text-sm text-gray-500">{property.bookings} bookings</span>
+            {fetchedProperties.length === 0 ? (
+              <Card className="p-6">
+                <h3 className="text-xl font-bold">No Properties Available</h3>
+                <p className="text-gray-500">You currently have no properties listed. Please add a property to get started.</p>
+              </Card>
+            ) : (
+              fetchedProperties.map(property => (
+                <Card key={property.id} className="p-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="md:w-1/4">
+                      <img 
+                        src={property.picture[0]} 
+                        alt={property.title} 
+                        className="w-full h-36 object-cover rounded-md"
+                      />
+                    </div>
+                    <div className="md:w-3/4 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold">{property.title}</h3>
+                        <p className="text-gray-500">{property.location}</p>
+                        <div className="flex items-center mt-2">
+                          <span className="text-sm font-medium mr-4">${property.price_per_night}/night</span>
+                          <span className="text-sm text-gray-500">{property.bookings} bookings</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-end mt-4 gap-2">
+                        <Button variant="outline" size="sm">Edit</Button>
+                        <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50">Delete</Button>
                       </div>
                     </div>
-                    <div className="flex justify-end mt-4 gap-2">
-                      <Button variant="outline" size="sm">Edit</Button>
-                      <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50">Delete</Button>
-                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </div>
